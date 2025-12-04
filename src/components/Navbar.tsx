@@ -5,7 +5,7 @@ import { Phone } from 'lucide-react';
 const useMinimalStyles = () => {
   useEffect(() => {
     const styles = `
-      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display.swap');
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
       
       * {
         -webkit-font-smoothing: antialiased;
@@ -62,7 +62,6 @@ const useMinimalStyles = () => {
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
-  const [isVisible, setIsVisible] = useState(true);
   const [isShaking, setIsShaking] = useState(false);
 
   useMinimalStyles();
@@ -70,21 +69,6 @@ const Navbar = () => {
   useEffect(() => {
     const handleScroll = () => {
       const scrollTop = window.scrollY;
-      const scrollHeight = document.documentElement.scrollHeight;
-      const clientHeight = document.documentElement.clientHeight;
-
-      // Gère le cas où la page n'est pas scrollable
-      if (scrollHeight <= clientHeight) {
-        setIsVisible(true);
-        setIsScrolled(false);
-        return;
-      }
-
-      const scrollableHeight = scrollHeight - clientHeight;
-      const scrollPercentage = (scrollTop / scrollableHeight) * 100;
-
-      // Masque la navbar si le scroll est supérieur à 17%
-      setIsVisible(scrollPercentage < 2);
       
       // Gère l'ombre de la navbar
       setIsScrolled(scrollTop > 10);
@@ -130,8 +114,7 @@ const Navbar = () => {
           left: 0,
           right: 0,
           zIndex: 50,
-          transition: 'transform 0.4s ease, box-shadow 0.2s',
-          transform: isVisible ? 'translateY(0)' : 'translateY(-100%)', // Applique la visibilité
+          transition: 'box-shadow 0.2s',
         }}
       >
         <div style={{

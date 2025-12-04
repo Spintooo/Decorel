@@ -88,7 +88,7 @@ const Hero = () => {
                 <div className="flex flex-col items-center">
                   <span className="font-tajawal text-base text-gray-500 line-through mb-1">950 درهم</span>
                   <span className="bg-gradient-to-r from-[#dc2626] to-[#ef4444] text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
-                   تخفيـــض 23% لمدة اسبوع فقط
+عرض لمدة محدودة فقط !
                   </span>
                 </div>
               </div>
