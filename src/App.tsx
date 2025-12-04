@@ -10,10 +10,8 @@ import Luna from './components/Luna';
 // Page d'accueil principale
 const HomePage = () => (
   <>
-    {/* Navbar masquée sur mobile, visible à partir de md */}
-    <div className="hidden md:block">
-      <Navbar />
-    </div>
+    {/* Navbar visible sur TOUS les écrans (mobile et desktop) */}
+    <Navbar />
     <Hero />
     <OrderForm />
     <TechnicalSpecs />

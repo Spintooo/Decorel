@@ -20,6 +20,7 @@ const useMinimalStyles = () => {
         background: rgba(255, 255, 255, 0.98);
         backdrop-filter: blur(10px);
         border-bottom: 1px solid #e5e5e5;
+        transition: transform 0.3s ease, box-shadow 0.2s;
       }
 
       .minimal-nav.scrolled {
@@ -62,16 +63,34 @@ const useMinimalStyles = () => {
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
   const [isShaking, setIsShaking] = useState(false);
+  const [lastScrollY, setLastScrollY] = useState(0);
 
   useMinimalStyles();
 
   useEffect(() => {
     const handleScroll = () => {
       const scrollTop = window.scrollY;
+      const scrollHeight = document.documentElement.scrollHeight;
+      const clientHeight = document.documentElement.clientHeight;
+      
+      // Calcule le pourcentage de scroll
+      const maxScroll = scrollHeight - clientHeight;
+      const scrollPercentage = maxScroll > 0 ? (scrollTop / maxScroll) * 100 : 0;
+      
+      // Masque la navbar si le scroll dépasse 7%
+      if (scrollPercentage > 7) {
+        setIsVisible(false);
+      } else {
+        setIsVisible(true);
+      }
       
       // Gère l'ombre de la navbar
       setIsScrolled(scrollTop > 10);
+      
+      // Met à jour la dernière position de scroll
+      setLastScrollY(scrollTop);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -80,7 +99,7 @@ const Navbar = () => {
     handleScroll();
 
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [lastScrollY]);
 
   // Animation de shaking toutes les 3 secondes
   useEffect(() => {
@@ -114,7 +133,7 @@ const Navbar = () => {
           left: 0,
           right: 0,
           zIndex: 50,
-          transition: 'box-shadow 0.2s',
+          transform: isVisible ? 'translateY(0)' : 'translateY(-100%)',
         }}
       >
         <div style={{

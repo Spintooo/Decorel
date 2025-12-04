@@ -1,31 +1,26 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
-    User, Phone, MapPin, CheckCircle, X, Sparkles, ArrowRight, ArrowLeft, Package
+    User, CheckCircle, X, Sparkles, ArrowRight, ArrowLeft, Gift, Flame
 } from 'lucide-react';
 
-// --- Fonctions de Suivi ---
+// --- Fonctions de Suivi (CRITIQUE : NE PAS TOUCHER) ---
 const trackPixelEvent = (eventName, eventData = {}) => {
   if (typeof window.fbq === 'function') {
     window.fbq('track', eventName, eventData);
-    console.log(`Meta Pixel Event: ${eventName}`, eventData);
-  } else {
-    console.warn(`Meta Pixel (window.fbq) not found. Event "${eventName}" not tracked.`);
   }
 };
 
 const trackCustomEvent = (eventName, eventData = {}) => {
   if (typeof window.fbq === 'function') {
     window.fbq('trackCustom', eventName, eventData);
-    console.log(`Custom Event: ${eventName}`, eventData);
   }
 };
 
-// --- Configuration des Produits ---
+// --- Configuration ---
 const AVAILABLE_COLORS = [
   { 
     id: 'white', 
     name: 'اللون الابيض', 
-    hex: '#FFFFFF',
     previewImage: 'https://i.ibb.co/0jPHbnjs/1.png',
     images: {
       style_1: 'https://i.ibb.co/0jPHbnjs/1.png',
@@ -37,7 +32,6 @@ const AVAILABLE_COLORS = [
   { 
     id: 'black', 
     name: 'اللون الاسود', 
-    hex: '#1A1A1A',
     previewImage: 'https://i.ibb.co/wFfzHY37/4.png',
     images: {
       style_1: 'https://i.ibb.co/wFfzHY37/4.png',
@@ -49,7 +43,6 @@ const AVAILABLE_COLORS = [
   { 
     id: 'wood', 
     name: 'اللون الخشبي', 
-    hex: '#a9907a',
     previewImage: 'https://i.ibb.co/sJ6Jf2Fx/1.png',
     images: {
       style_1: 'https://i.ibb.co/sJ6Jf2Fx/1.png',
@@ -61,7 +54,6 @@ const AVAILABLE_COLORS = [
   { 
     id: 'brown', 
     name: 'اللون البني', 
-    hex: '#8B4513',
     previewImage: 'https://i.ibb.co/99y998FS/1.png',
     images: {
       style_1: 'https://i.ibb.co/99y998FS/1.png',
@@ -79,40 +71,7 @@ const MIRROR_STYLES = [
   { id: 'style_4', name: 'الشكل 4', order: 4 }
 ];
 
-const PHONE_INDICATIVE = "+212";
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzHcvbH-ra0MUrCY5A_kJgvJWPSur-GFB7Y5Gy7d-iYhtD-ivhO63zV9vUs7Uvd_1lg/exec";
-
-// --- Couleurs CTA dynamiques ---
-const CTA_COLORS = ['#09be79', '#0aeb0a', '#f87018', '#d55907'];
-
-// --- Hook pour préchargement d'images ---
-const useImagePreloader = (urls) => {
-  const [loadedImages, setLoadedImages] = useState(new Set());
-
-  useEffect(() => {
-    urls.forEach(url => {
-      const img = new Image();
-      img.onload = () => {
-        setLoadedImages(prev => new Set([...prev, url]));
-      };
-      img.src = url;
-    });
-  }, [urls]);
-
-  return loadedImages;
-};
-
-// --- Hook pour couleur CTA aléatoire ---
-const useRandomCTAColor = () => {
-  const [ctaColor, setCtaColor] = useState(CTA_COLORS[0]);
-
-  useEffect(() => {
-    const randomColor = CTA_COLORS[Math.floor(Math.random() * CTA_COLORS.length)];
-    setCtaColor(randomColor);
-  }, []);
-
-  return ctaColor;
-};
 
 // --- Utilitaires ---
 const formatPhoneNumber = (value) => {
@@ -143,39 +102,27 @@ const EliteOrderForm = () => {
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
-  const [hasTriggeredInitiateCheckout, setHasTriggeredInitiateCheckout] = useState(false);
 
   const orderSectionRef = useRef(null);
-  const ctaColor = useRandomCTAColor();
-
-  // Préchargement intelligent des images
-  const preloadUrls = formData.selectedColor 
-    ? Object.values(AVAILABLE_COLORS.find(c => c.id === formData.selectedColor)?.images || {})
-    : AVAILABLE_COLORS.map(c => c.previewImage);
-  
-  useImagePreloader(preloadUrls);
 
   useEffect(() => {
     trackPixelEvent('ViewContent', { content_name: 'Coiffeuse Élégante', value: 729.00, currency: 'MAD' });
   }, []);
 
   const scrollToSectionTop = () => {
-    orderSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
-
-  const triggerInitiateCheckout = useCallback(() => {
-    if (!hasTriggeredInitiateCheckout) {
-      trackPixelEvent('InitiateCheckout');
-      setHasTriggeredInitiateCheckout(true);
+    const yOffset = -20; 
+    const element = orderSectionRef.current;
+    if (element) {
+        const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+        window.scrollTo({top: y, behavior: 'smooth'});
     }
-  }, [hasTriggeredInitiateCheckout]);
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     const processedValue = name === 'phoneLocalPart' ? formatPhoneNumber(value) : value;
     setFormData(prev => ({ ...prev, [name]: processedValue }));
     if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
-    if (currentStep === 3 && value.trim() !== '') triggerInitiateCheckout();
   };
 
   const handleColorSelection = (colorId) => {
@@ -186,18 +133,14 @@ const EliteOrderForm = () => {
 
   const handleMirrorSelection = (mirrorId) => {
     setFormData(prev => ({ ...prev, selectedMirror: mirrorId }));
-    trackCustomEvent('ProductMirrorSelected', { selected_mirror: mirrorId, selected_color: formData.selectedColor });
+    trackCustomEvent('ProductMirrorSelected', { selected_mirror: mirrorId });
     if (errors.selectedMirror) setErrors(prev => ({ ...prev, selectedMirror: '' }));
   };
 
   const validateStep = (step) => {
     const newErrors = {};
-    if (step === 1 && !formData.selectedColor) {
-      newErrors.selectedColor = 'الرجاء اختيار لون';
-    }
-    if (step === 2 && !formData.selectedMirror) {
-      newErrors.selectedMirror = 'الرجاء اختيار شكل المرآة';
-    }
+    if (step === 1 && !formData.selectedColor) newErrors.selectedColor = 'الرجاء اختيار لون';
+    if (step === 2 && !formData.selectedMirror) newErrors.selectedMirror = 'الرجاء اختيار شكل المرآة';
     if (step === 3) {
       if (!formData.fullName.trim()) newErrors.fullName = 'الاسم الكامل مطلوب';
       if (!formData.address.trim()) newErrors.address = 'عنوان التوصيل مطلوب';
@@ -235,6 +178,7 @@ const EliteOrderForm = () => {
 
     setIsSubmitting(true);
     setSubmitError(null);
+    trackPixelEvent('InitiateCheckout');
 
     const selectedColor = AVAILABLE_COLORS.find(c => c.id === formData.selectedColor);
     const selectedMirror = MIRROR_STYLES.find(m => m.id === formData.selectedMirror);
@@ -246,154 +190,52 @@ const EliteOrderForm = () => {
       phone: formData.phoneLocalPart.replace(/\s/g, ''),
       address: formData.address,
       comments: formData.mirrorName || "",
-      eventId: 'event_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
-      eventSourceUrl: window.location.href,
-      contentIds: ['coiffeuse_makiage_premium'],
-      contentType: 'product'
+      eventId: 'event_' + Date.now(),
     };
 
-    let submissionSuccessful = false;
-
     try {
-      const response = await fetch(GOOGLE_SCRIPT_URL, { 
+      await fetch(GOOGLE_SCRIPT_URL, { 
         method: 'POST', 
-        mode: 'cors',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        }, 
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' }, 
         body: JSON.stringify(orderData) 
       });
       
-      if (response.ok) {
-        const result = await response.json();
-        console.log("Succès Google Sheets:", result);
-        submissionSuccessful = true;
-      } else {
-        throw new Error(`Erreur HTTP! statut: ${response.status}`);
-      }
-    } catch (error) {
-      try {
-        await fetch(GOOGLE_SCRIPT_URL, { 
-          method: 'POST', 
-          mode: 'no-cors',
-          body: JSON.stringify(orderData) 
-        });
-        submissionSuccessful = true;
-      } catch (fallbackError) {
-        console.error("Erreur d'envoi finale:", fallbackError);
-        setSubmitError("حدث خطأ في الشبكة. الرجاء المحاولة مرة أخرى أو الاتصال بنا مباشرة على الواتساب.");
-      }
-    }
-
-    if (submissionSuccessful) {
       trackPixelEvent('Purchase', { value: 729.00, currency: 'MAD' });
       setShowSuccessPopup(true);
+    } catch (error) {
+      setSubmitError("حدث خطأ في الاتصال. حاول مرة أخرى.");
     }
-    
     setIsSubmitting(false);
   };
 
-  const closeSuccessPopup = () => {
-    setShowSuccessPopup(false);
-    setFormData({ 
-      selectedColor: null, 
-      selectedMirror: null, 
-      fullName: '', 
-      phoneLocalPart: '', 
-      address: '', 
-      mirrorName: '' 
-    });
-    setErrors({});
-    setSubmitError(null);
-    setCurrentStep(1);
-    setHasTriggeredInitiateCheckout(false);
-    scrollToSectionTop();
-  };
-
-  // Composant Progress Bar optimisé
+  // --- Composant ProgressBar ---
   const ProgressBar = () => (
-    <div className="mb-4 sm:mb-6">
+    <div className="mb-3 relative px-1">
       <div className="flex items-center justify-between relative">
         {[1, 2, 3].map((step, index) => (
           <React.Fragment key={step}>
             <div className="flex flex-col items-center relative z-10 flex-1">
-              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold border-2 transition-all duration-300 ${
+              <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold border-2 transition-all duration-300 ${
                 currentStep >= step 
-                  ? 'bg-gradient-to-br from-orange-500 to-red-500 text-white border-orange-500 shadow-lg scale-110' 
-                  : 'bg-white text-gray-400 border-gray-300'
+                  ? 'bg-[#055c3a] text-white border-[#055c3a] shadow-sm' 
+                  : 'bg-white text-gray-300 border-gray-200'
               }`}>
-                {currentStep > step ? (
-                  <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />
-                ) : (
-                  <span className="text-sm sm:text-base">{step}</span>
-                )}
+                {currentStep > step ? <CheckCircle size={14} /> : <span className="text-xs">{step}</span>}
               </div>
-              <span className={`mt-2 text-xs sm:text-sm font-bold font-cairo text-center transition-colors duration-300 ${
-                currentStep >= step ? 'text-orange-600' : 'text-gray-400'
+              <span className={`mt-0.5 text-[10px] font-bold font-tajawal ${
+                currentStep >= step ? 'text-[#055c3a]' : 'text-gray-300'
               }`}>
                 {step === 1 ? 'اللون' : step === 2 ? 'الشكل' : 'التوصيل'}
               </span>
             </div>
             {index < 2 && (
-              <div className={`h-1 flex-1 mx-2 sm:mx-4 transition-all duration-500 rounded-full ${
-                currentStep > step ? 'bg-gradient-to-r from-orange-500 to-red-500' : 'bg-gray-300'
-              }`} style={{ marginTop: '-20px' }} />
+              <div className={`h-0.5 flex-1 mx-1 transition-all duration-500 rounded-full ${
+                currentStep > step ? 'bg-[#055c3a]' : 'bg-gray-200'
+              }`} style={{ marginTop: '-15px' }} />
             )}
           </React.Fragment>
         ))}
-      </div>
-    </div>
-  );
-
-  // Nouveau Popup de Succès Ultramoderne
-  const SuccessPopup = () => (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-lg z-50 flex items-center justify-center p-4 animate-fade-in">
-      <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl p-6 max-w-sm w-full shadow-2xl border border-gray-200/50 relative animate-scale-in">
-        {/* Bouton fermeture */}
-        <button 
-          onClick={closeSuccessPopup} 
-          className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-300 hover:scale-110 active:scale-95 group"
-        >
-          <X size={16} className="text-gray-600 group-hover:text-gray-800" />
-        </button>
-        
-        {/* Icone animée */}
-        <div className="relative mx-auto mb-4">
-          <div className="w-20 h-20 flex items-center justify-center bg-gradient-to-br from-green-400 to-emerald-600 rounded-full shadow-lg animate-pulse-slow">
-            <CheckCircle className="h-9 w-9 text-white" />
-          </div>
-          <div className="absolute inset-0 bg-gradient-to-br from-green-400 to-emerald-600 rounded-full opacity-20 animate-ping-slow"></div>
-        </div>
-        
-        {/* Contenu */}
-        <div className="text-center space-y-3">
-          <h2 className="text-xl font-black text-gray-800 font-cairo leading-tight">
-            تم تأكيد طلبك بنجاح! 🎉
-          </h2>
-          
-          <div className="space-y-2 text-sm text-gray-600 font-tajawal">
-            <p className="leading-relaxed">
-              عزيزي/عزيزتي <span className="font-bold text-orange-600">{formData.fullName.split(" ")[0]}</span>
-            </p>
-            <p className="leading-relaxed">
-              سنتصل بك على الرقم 
-              <strong className="font-sans text-green-600 mx-1" dir="ltr">
-                {PHONE_INDICATIVE} {formData.phoneLocalPart}
-              </strong>
-              خلال 24 ساعة
-            </p>
-          </div>
-        </div>
-
-        {/* Bouton de confirmation */}
-        <button 
-          onClick={closeSuccessPopup} 
-          className="w-full mt-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 hover:shadow-lg active:scale-95 flex items-center justify-center font-cairo text-sm shadow-md"
-        >
-          <CheckCircle className="w-4 h-4 ml-2" />
-          تم الفهم - إغلاق
-        </button>
       </div>
     </div>
   );
@@ -402,133 +244,159 @@ const EliteOrderForm = () => {
     <section 
       id="order" 
       ref={orderSectionRef} 
-      className="py-6 sm:py-8 bg-gradient-to-br from-gray-50 via-orange-50/30 to-gray-50 relative overflow-hidden" 
+      className="py-1 bg-[#f8fafc] relative overflow-hidden" 
       dir="rtl"
     >
-      {/* Background decorations minimalistes */}
-      <div className="absolute top-0 left-0 w-48 h-48 bg-orange-200/20 rounded-full blur-2xl opacity-40"></div>
-      <div className="absolute bottom-0 right-0 w-64 h-64 bg-red-200/15 rounded-full blur-2xl opacity-40"></div>
+      <div className="container mx-auto px-2 max-w-md relative z-10">
+        
+        {/* TEXTE PROMO - Taille Agrandie */}
+        {currentStep === 1 && (
+          <div className="text-center mb-2 animate-fade-in">
+            <div className="inline-block bg-gradient-to-l from-red-500 to-orange-500 text-white px-4 py-1.5 rounded-full shadow-sm">
+              <p className="text-sm font-black font-tajawal whitespace-nowrap flex items-center gap-1">
+                <span>🔥</span>
+                الكوافوز الاكثر مبيعا مع هدية
+              </p>
+            </div>
+          </div>
+        )}
 
-      <div className="container mx-auto px-4 sm:px-6 max-w-6xl relative z-10">
-        <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-6 sm:p-8 shadow-2xl border border-gray-200/50">
+        <div className="bg-white rounded-xl p-3 shadow-lg border border-gray-100">
           <ProgressBar />
 
-          {/* ÉTAPE 1 : Sélection de couleur - ULTRA-RESPONSIVE */}
+          {/* ÉTAPE 1 : Sélection de couleur */}
           {currentStep === 1 && (
-            <div className="space-y-6 animate-slide-in">
-              <div className="text-center mb-4">
-                <h2 className="text-xl sm:text-2xl font-black text-gray-800 font-cairo flex items-center justify-center gap-2">
-                  <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-orange-500" />
-إختر اللون اللذي يعجبك (+هدية🎁)
-                </h2>
-              </div>
+              <div className="animate-slide-in">
+                <div className="text-center mb-2">
+                  <h2 className="text-lg font-black text-gray-800 font-cairo">
+                    إختر اللون اللذي يعجبك
+                  </h2>
+                </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 max-w-4xl mx-auto">
-                {AVAILABLE_COLORS.map((color) => (
-                  <button
-                    key={color.id}
-                    type="button"
-                    onClick={() => handleColorSelection(color.id)}
-                    className={`group relative rounded-xl sm:rounded-2xl overflow-hidden transition-all duration-300 border-2 border-gray-200 hover:border-gray-300 ${
-                      formData.selectedColor === color.id
-                        ? 'ring-3 ring-orange-500 shadow-xl scale-105 border-orange-500'
-                        : 'hover:shadow-lg hover:scale-102 shadow-md'
-                    }`}
-                  >
-                    <div className="aspect-square bg-gradient-to-br from-gray-50 to-gray-100 relative overflow-hidden">
-                      <img
-                        src={color.previewImage}
-                        alt={color.name}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                        loading="eager"
-                      />
-                      {formData.selectedColor === color.id && (
-                        <div className="absolute inset-0 bg-orange-500/10 backdrop-blur-[1px] flex items-center justify-center">
-                          <div className="bg-white rounded-full p-2 shadow-2xl">
-                            <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-orange-500" />
+                <div className="grid grid-cols-2 gap-2">
+                  {AVAILABLE_COLORS.map((color) => {
+                    // Ajout du badge Best Seller pour la couleur blanche
+                    const isBestSeller = color.id === 'white';
+                    
+                    return (
+                      <button
+                        key={color.id}
+                        onClick={() => handleColorSelection(color.id)}
+                        className={`group relative rounded-lg overflow-hidden transition-all duration-200 bg-white border ${
+                          formData.selectedColor === color.id
+                            ? 'border-[#055c3a] ring-1 ring-[#055c3a]'
+                            : 'border-gray-200'
+                        }`}
+                      >
+                         {/* Badge Best Seller - Taille Agrandie */}
+                        {isBestSeller && (
+                          <div className="absolute top-0 left-0 right-0 z-20 flex justify-center -mt-0.5">
+                             <span className="bg-red-600 text-white text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-b shadow-sm flex items-center gap-1 font-tajawal">
+                               <Flame size={12} className="fill-yellow-300 text-yellow-300" />
+                               الاكثر مبيعا
+                             </span>
                           </div>
+                        )}
+
+                        <div className="aspect-square relative overflow-hidden bg-gray-50">
+                          <img
+                            src={color.previewImage}
+                            alt={color.name}
+                            className="w-full h-full object-cover"
+                          />
+                          {formData.selectedColor === color.id && (
+                            <div className="absolute inset-0 bg-[#055c3a]/20 flex items-center justify-center">
+                              <div className="bg-white rounded-full p-1 shadow-md animate-scale-in">
+                                <CheckCircle className="w-4 h-4 text-[#055c3a]" />
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-3 sm:p-4">
-                      <p className="text-white font-bold text-sm sm:text-base font-cairo text-center drop-shadow-lg">
-                        {color.name}
-                      </p>
-                    </div>
+                        
+                        <div className="py-1.5 bg-white border-t border-gray-100">
+                          <p className={`font-bold text-xs font-tajawal text-center leading-none ${
+                            formData.selectedColor === color.id ? 'text-[#055c3a]' : 'text-gray-800'
+                          }`}>
+                            {color.name}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {errors.selectedColor && (
+                  <div className="mt-2 text-red-500 text-center font-bold text-xs bg-red-50 p-1.5 rounded border border-red-100 animate-pulse">
+                    {errors.selectedColor}
+                  </div>
+                )}
+
+                <div className="mt-4">
+                  <button
+                    onClick={nextStep}
+                    className="w-full bg-[#055c3a] text-white py-3 rounded-lg font-cairo font-bold text-lg shadow-md hover:shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                  >
+                    <span>التـــالي</span>
+                    <ArrowLeft className="w-5 h-5" />
                   </button>
-                ))}
+                </div>
               </div>
-
-              {errors.selectedColor && (
-                <p className="text-red-600 text-center font-tajawal text-sm bg-red-50 border border-red-200 rounded-lg p-3 max-w-2xl mx-auto">
-                  {errors.selectedColor}
-                </p>
-              )}
-
-              <div className="flex justify-center pt-4">
-                <button
-                  type="button"
-                  onClick={nextStep}
-                  disabled={!formData.selectedColor}
-                  style={{ backgroundColor: formData.selectedColor ? ctaColor : undefined }}
-                  className={`px-10 py-4 rounded-xl font-cairo font-bold text-base sm:text-lg transition-all duration-300 flex items-center gap-3 shadow-xl ${
-                    formData.selectedColor
-                      ? 'text-white hover:shadow-2xl hover:scale-105 active:scale-95'
-                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  }`}
-                >
-                  <span>التـــالي</span>
-                  <ArrowLeft className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
           )}
 
-          {/* ÉTAPE 2 : Sélection du style de miroir - ULTRA-RESPONSIVE */}
-          {currentStep === 2 && formData.selectedColor && (
-            <div className="space-y-6 animate-slide-in">
-              <div className="text-center mb-4">
-                <h2 className="text-xl sm:text-2xl font-black text-gray-800 font-cairo flex items-center justify-center gap-2">
-                  <Package className="h-5 w-5 sm:h-6 sm:w-6 text-red-500" />
+          {/* ÉTAPE 2 : Sélection du miroir */}
+          {currentStep === 2 && (
+            <div className="animate-slide-in">
+              <div className="text-center mb-2">
+                <h2 className="text-lg font-black text-gray-800 font-cairo">
                   إختر شكل المرٱة المناسب لك
                 </h2>
               </div>
 
-              {/* Mobile: 2 colonnes avec 2 photos chacune */}
-              {/* Desktop: 4 colonnes en une seule ligne */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 max-w-5xl mx-auto">
+              <div className="grid grid-cols-2 gap-2">
                 {MIRROR_STYLES.map((mirror) => {
                   const selectedColorData = AVAILABLE_COLORS.find(c => c.id === formData.selectedColor);
                   const imageUrl = selectedColorData?.images[mirror.id];
+                  const isBestSeller = mirror.id === 'style_1';
 
                   return (
                     <button
                       key={mirror.id}
-                      type="button"
                       onClick={() => handleMirrorSelection(mirror.id)}
-                      className={`group relative rounded-xl sm:rounded-2xl overflow-hidden transition-all duration-300 border-2 border-gray-200 hover:border-gray-300 ${
+                      className={`group relative rounded-lg overflow-hidden transition-all duration-200 bg-white border ${
                         formData.selectedMirror === mirror.id
-                          ? 'ring-3 ring-red-500 shadow-xl scale-105 border-red-500'
-                          : 'hover:shadow-lg hover:scale-102 shadow-md'
+                          ? 'border-[#055c3a] ring-1 ring-[#055c3a]'
+                          : 'border-gray-200'
                       }`}
                     >
-                      <div className="aspect-[0.9] sm:aspect-square bg-gradient-to-br from-gray-50 to-gray-100 relative overflow-hidden">
+                      {/* Badge Best Seller - Taille Agrandie */}
+                      {isBestSeller && (
+                        <div className="absolute top-0 left-0 right-0 z-20 flex justify-center -mt-0.5">
+                           <span className="bg-red-600 text-white text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-b shadow-sm flex items-center gap-1 font-tajawal">
+                             <Flame size={12} className="fill-yellow-300 text-yellow-300" />
+                             الاكثر مبيعا
+                           </span>
+                        </div>
+                      )}
+
+                      <div className="aspect-square relative overflow-hidden bg-gray-50">
                         <img
                           src={imageUrl}
                           alt={mirror.name}
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                          loading="lazy"
+                          className="w-full h-full object-cover"
                         />
                         {formData.selectedMirror === mirror.id && (
-                          <div className="absolute inset-0 bg-red-500/10 backdrop-blur-[1px] flex items-center justify-center">
-                            <div className="bg-white rounded-full p-2 shadow-2xl">
-                              <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-500" />
+                          <div className="absolute inset-0 bg-[#055c3a]/20 flex items-center justify-center">
+                            <div className="bg-white rounded-full p-1 shadow-md animate-scale-in">
+                              <CheckCircle className="w-4 h-4 text-[#055c3a]" />
                             </div>
                           </div>
                         )}
                       </div>
-                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-3 sm:p-4">
-                        <p className="text-white font-bold text-sm sm:text-base font-cairo text-center drop-shadow-lg">
+                      
+                      <div className="py-1.5 bg-white border-t border-gray-100">
+                        <p className={`font-bold text-xs font-tajawal text-center leading-none ${
+                          formData.selectedMirror === mirror.id ? 'text-[#055c3a]' : 'text-gray-800'
+                        }`}>
                           {mirror.name}
                         </p>
                       </div>
@@ -538,30 +406,22 @@ const EliteOrderForm = () => {
               </div>
 
               {errors.selectedMirror && (
-                <p className="text-red-600 text-center font-tajawal text-sm bg-red-50 border border-red-200 rounded-lg p-3 max-w-2xl mx-auto">
+                <div className="mt-2 text-red-500 text-center font-bold text-xs bg-red-50 p-1.5 rounded border border-red-100 animate-pulse">
                   {errors.selectedMirror}
-                </p>
+                </div>
               )}
 
-              <div className="flex justify-center gap-4 pt-4">
+              {/* Layout Boutons: 20% (Icon) / 80% (Texte) */}
+              <div className="flex gap-2 mt-4">
                 <button
-                  type="button"
                   onClick={prevStep}
-                  className="px-6 py-4 rounded-xl font-cairo font-bold text-base bg-gray-200 text-gray-700 hover:bg-gray-300 transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl"
+                  className="w-[20%] bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center"
                 >
-                  <ArrowRight className="w-5 h-5" />
-                  <span>السابق</span>
+                  <ArrowRight className="w-6 h-6" />
                 </button>
                 <button
-                  type="button"
                   onClick={nextStep}
-                  disabled={!formData.selectedMirror}
-                  style={{ backgroundColor: formData.selectedMirror ? ctaColor : undefined }}
-                  className={`px-10 py-4 rounded-xl font-cairo font-bold text-base sm:text-lg transition-all duration-300 flex items-center gap-3 shadow-xl ${
-                    formData.selectedMirror
-                      ? 'text-white hover:shadow-2xl hover:scale-105 active:scale-95'
-                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  }`}
+                  className="flex-1 bg-[#055c3a] text-white py-3 rounded-lg font-cairo font-bold text-lg shadow-md hover:shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2"
                 >
                   <span>التـــالي</span>
                   <ArrowLeft className="w-5 h-5" />
@@ -570,125 +430,115 @@ const EliteOrderForm = () => {
             </div>
           )}
 
-          {/* ÉTAPE 3 : Informations de livraison - ULTRA-RESPONSIVE */}
+          {/* ÉTAPE 3 : Formulaire Final */}
           {currentStep === 3 && (
-            <form onSubmit={handleSubmit} className="space-y-6 animate-slide-in">
-              <div className="text-center mb-4">
-                <h2 className="text-xl sm:text-2xl font-black text-gray-800 font-cairo flex items-center justify-center gap-2">
-                  <User className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
-                 معلومات التوصيل + إسمك هدية فوق الكوافوز
+            <form onSubmit={handleSubmit} className="animate-slide-in space-y-3">
+              <div className="text-center mb-3">
+                <h2 className="text-lg font-black text-gray-800 font-cairo leading-tight">
+                  معلومات التوصيل
+                  {/* Texte Cadeau Agrandis */}
+                  <div className="text-[#055c3a] text-lg sm:text-xl font-black flex items-center justify-center gap-1 mt-1">
+                    <span>+ إسمك هدية فوق الكوافوز</span>
+                    <Gift className="h-5 w-5 text-orange-500 animate-bounce" />
+                  </div>
                 </h2>
               </div>
 
-              <div className="space-y-5 max-w-2xl mx-auto">
-                <div>
+              <div className="space-y-3">
+                <div className="relative">
+                  {/* Icone Gris Foncé */}
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600">
+                    <User size={18} />
+                  </div>
                   <input
                     type="text"
                     name="fullName"
                     value={formData.fullName}
                     onChange={handleInputChange}
                     placeholder="الاسم الكامل"
-                    className={`w-full p-4 sm:p-5 border-2 rounded-xl transition-all font-tajawal text-base sm:text-lg focus:ring-3 placeholder-gray-600 ${
-                      errors.fullName
-                        ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20'
-                        : 'border-gray-300 focus:border-green-500 focus:ring-green-500/20'
+                    className={`w-full pr-9 pl-3 py-3 bg-gray-50 border rounded-lg font-tajawal text-sm text-gray-900 placeholder-gray-500 focus:bg-white transition-all ${
+                      errors.fullName ? 'border-red-400' : 'border-gray-200 focus:border-[#055c3a]'
                     }`}
-                    style={{ textAlign: 'right', direction: 'rtl' }}
                   />
-                  {errors.fullName && (
-                    <p className="text-red-600 text-sm mt-2 font-tajawal text-right">{errors.fullName}</p>
-                  )}
+                  {errors.fullName && <p className="text-red-500 text-[10px] mt-1 mr-1">{errors.fullName}</p>}
                 </div>
 
-                <div>
-                  <div className="flex">
+                <div className="relative">
+                   {/* Icone Gris Foncé */}
+                   <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 z-10">
+                    <div className="w-4 h-4 flex items-center justify-center">📞</div>
+                  </div>
+                  <div className="flex bg-gray-50 border rounded-lg overflow-hidden border-gray-200 focus-within:border-[#055c3a] focus-within:bg-white transition-all">
                     <input
                       type="tel"
                       name="phoneLocalPart"
                       value={formData.phoneLocalPart}
                       onChange={handleInputChange}
                       placeholder="رقم الهاتف"
-                      className={`flex-1 p-4 sm:p-5 border-2 border-l-0 rounded-r-xl transition-all font-tajawal text-base sm:text-lg focus:ring-3 placeholder-gray-600 ${
-                        errors.phoneLocalPart
-                          ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20'
-                          : 'border-gray-300 focus:border-green-500 focus:ring-green-500/20'
-                      }`}
-                      style={{ textAlign: 'left', direction: 'ltr' }}
+                      className="flex-1 pr-9 pl-2 py-3 bg-transparent border-none outline-none font-tajawal text-sm text-gray-900 placeholder-gray-500 text-left dir-ltr"
+                      style={{ direction: 'ltr', textAlign: 'left' }}
                     />
-                    <span className="inline-flex items-center px-4 sm:px-5 rounded-l-xl border-2 border-r-0 border-gray-300 bg-gradient-to-br from-gray-50 to-gray-100 font-bold text-gray-700 font-sans text-base sm:text-lg">
-                      {PHONE_INDICATIVE}
-                    </span>
+                    <div className="bg-gray-100 px-3 flex items-center border-r border-gray-200">
+                      <span className="text-gray-600 font-bold text-sm dir-ltr">+212</span>
+                    </div>
                   </div>
-                  {errors.phoneLocalPart && (
-                    <p className="text-red-600 text-sm mt-2 font-tajawal text-right">{errors.phoneLocalPart}</p>
-                  )}
+                  {errors.phoneLocalPart && <p className="text-red-500 text-[10px] mt-1 mr-1">{errors.phoneLocalPart}</p>}
                 </div>
 
-                <div>
+                <div className="relative">
+                   {/* Icone Gris Foncé */}
+                   <div className="absolute right-3 top-3 text-gray-600">
+                    <div className="w-4 h-4">📍</div>
+                  </div>
                   <textarea
                     name="address"
                     value={formData.address}
                     onChange={handleInputChange}
-                    placeholder="عنوان التوصيل"
-                    rows={4}
-                    className={`w-full p-4 sm:p-5 border-2 rounded-xl transition-all resize-none font-tajawal text-base sm:text-lg focus:ring-3 placeholder-gray-600 ${
-                      errors.address
-                        ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20'
-                        : 'border-gray-300 focus:border-green-500 focus:ring-green-500/20'
+                    placeholder="عنوان التوصيل (المدينة - الحي)"
+                    rows={2}
+                    className={`w-full pr-9 pl-3 py-3 bg-gray-50 border rounded-lg font-tajawal text-sm text-gray-900 placeholder-gray-500 focus:bg-white transition-all resize-none ${
+                      errors.address ? 'border-red-400' : 'border-gray-200 focus:border-[#055c3a]'
                     }`}
-                    style={{ textAlign: 'right', direction: 'rtl' }}
                   />
-                  {errors.address && (
-                    <p className="text-red-600 text-sm mt-2 font-tajawal text-right">{errors.address}</p>
-                  )}
+                  {errors.address && <p className="text-red-500 text-[10px] mt-1 mr-1">{errors.address}</p>}
                 </div>
 
-                <div>
+                <div className="relative">
+                  {/* Icone Gris Foncé */}
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600">
+                    <Sparkles size={18} />
+                  </div>
                   <input
                     type="text"
                     name="mirrorName"
                     value={formData.mirrorName}
                     onChange={handleInputChange}
                     placeholder="الاسم فوق المرآة (اختياري)"
-                    className="w-full p-4 sm:p-5 border-2 border-gray-300 rounded-xl focus:border-green-500 focus:ring-3 focus:ring-green-500/20 transition-all font-tajawal text-base sm:text-lg placeholder-gray-600"
-                    style={{ textAlign: 'right', direction: 'rtl' }}
+                    className="w-full pr-9 pl-3 py-3 bg-gray-50 border border-gray-200 rounded-lg font-tajawal text-sm text-gray-900 placeholder-gray-500 focus:border-[#055c3a] focus:bg-white transition-all"
                   />
                 </div>
               </div>
 
               {submitError && (
-                <p className="text-red-600 text-center bg-red-50 border border-red-200 rounded-xl p-4 font-tajawal text-sm max-w-2xl mx-auto">
-                  {submitError}
-                </p>
+                <p className="text-red-500 text-center bg-red-50 p-2 rounded text-xs">{submitError}</p>
               )}
 
-              <div className="flex justify-center gap-4 pt-6 max-w-2xl mx-auto">
+              {/* Layout Boutons: 20% (Icon) / 80% (Texte) */}
+              <div className="flex gap-2 pt-2">
                 <button
                   type="button"
                   onClick={prevStep}
-                  className="px-6 py-4 rounded-xl font-cairo font-bold text-base bg-gray-200 text-gray-700 hover:bg-gray-300 transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl"
+                  className="w-[20%] bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center"
                 >
-                  <ArrowRight className="w-5 h-5" />
-                  <span>السابق</span>
+                  <ArrowRight className="w-6 h-6" />
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  style={{ backgroundColor: !isSubmitting ? ctaColor : undefined }}
-                  className={`flex-1 max-w-md py-4 px-8 rounded-xl font-cairo font-black text-base sm:text-lg transition-all duration-300 flex items-center justify-center gap-3 shadow-xl ${
-                    isSubmitting
-                      ? 'bg-gray-400 cursor-wait'
-                      : 'text-white hover:shadow-2xl hover:scale-105 active:scale-95'
-                  }`}
+                  className="flex-1 bg-[#055c3a] text-white py-3.5 rounded-lg font-cairo font-black text-lg shadow-md hover:shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2"
                 >
                   {isSubmitting ? (
-                    <>
-                      <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      <span className="text-sm">جاري تأكيد الطلب...</span>
-                    </>
+                    <span className="animate-pulse text-sm">جاري الطلب...</span>
                   ) : (
                     <>
                       <CheckCircle className="w-5 h-5" />
@@ -702,69 +552,54 @@ const EliteOrderForm = () => {
         </div>
       </div>
 
-      {showSuccessPopup && <SuccessPopup />}
+      {showSuccessPopup && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white rounded-xl p-5 w-full max-w-sm text-center shadow-2xl animate-scale-in relative">
+            <button 
+              onClick={() => setShowSuccessPopup(false)} 
+              className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
+            >
+              <X size={20} />
+            </button>
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+              <CheckCircle className="w-8 h-8 text-green-600" />
+            </div>
+            <h3 className="text-xl font-black font-cairo text-gray-800 mb-1">تم استلام طلبك!</h3>
+            <p className="text-sm text-gray-600 font-tajawal mb-4">
+              شكراً لك <span className="font-bold text-gray-800">{formData.fullName}</span>.<br/>
+              سيتصل بك فريقنا قريباً لتأكيد الطلب.
+            </p>
+            <button 
+              onClick={() => {
+                setShowSuccessPopup(false);
+                setCurrentStep(1);
+                setFormData({ selectedColor: null, selectedMirror: null, fullName: '', phoneLocalPart: '', address: '', mirrorName: '' });
+              }}
+              className="w-full bg-[#055c3a] text-white py-3 rounded-lg font-bold font-tajawal"
+            >
+              حسناً، فهمت
+            </button>
+          </div>
+        </div>
+      )}
 
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@700;900&display=swap');
-        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap');
         
         .font-cairo { font-family: 'Cairo', sans-serif; }
         .font-tajawal { font-family: 'Tajawal', sans-serif; }
         
-        input, textarea, button { -webkit-appearance: none; }
-        input:focus, textarea:focus, button:focus { outline: none; }
-        input, textarea { font-size: 16px; }
-        
         @keyframes slideIn {
-          from { opacity: 0; transform: translateX(30px); }
+          from { opacity: 0; transform: translateX(20px); }
           to { opacity: 1; transform: translateX(0); }
         }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes scaleIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
         
-        @keyframes scaleIn {
-          from { opacity: 0; transform: scale(0.9); }
-          to { opacity: 1; transform: scale(1); }
-        }
-        
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-
-        @keyframes pulse-slow {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.05); }
-        }
-
-        @keyframes ping-slow {
-          0% { transform: scale(1); opacity: 0.2; }
-          100% { transform: scale(1.5); opacity: 0; }
-        }
-        
-        .animate-slide-in { animation: slideIn 0.3s ease-out; }
-        .animate-scale-in { animation: scaleIn 0.2s ease-out; }
-        .animate-fade-in { animation: fadeIn 0.2s ease-out; }
-        .animate-pulse-slow { animation: pulse-slow 2s ease-in-out infinite; }
-        .animate-ping-slow { animation: ping-slow 3s ease-in-out infinite; }
-        
-        .hover\\:scale-102:hover { transform: scale(1.02); }
-
-        /* Optimisations mobiles */
-        @media (max-width: 640px) {
-          input, textarea {
-            font-size: 16px !important;
-          }
-        }
-
-        /* Styles pour l'alignement RTL/LTR */
-        .rtl-input {
-          text-align: right;
-          direction: rtl;
-        }
-        
-        .ltr-input {
-          text-align: left;
-          direction: ltr;
-        }
+        .animate-slide-in { animation: slideIn 0.25s ease-out forwards; }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        .animate-scale-in { animation: scaleIn 0.2s ease-out forwards; }
       `}</style>
     </section>
   );
