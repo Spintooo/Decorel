@@ -78,7 +78,7 @@ const Hero = () => {
               <div className="flex items-center justify-between">
                 <div className="flex flex-col items-center">
                   <div className="flex items-baseline gap-2">
-                    <span className="font-cairo font-black text-4xl text-[#055c3a]">699</span>
+                    <span className="font-cairo font-black text-4xl text-[#055c3a]">729</span>
                     <span className="font-tajawal text-lg text-[#055c3a]">درهم</span>
                   </div>
                 </div>
@@ -163,7 +163,7 @@ const Hero = () => {
                   
                   <div>
                     <div className="flex items-baseline gap-2 mb-2">
-                      <span className="font-cairo font-black text-5xl text-[#055c3a]">699</span>
+                      <span className="font-cairo font-black text-5xl text-[#055c3a]">729</span>
                       <span className="font-tajawal text-xl text-[#2C2C2C]">درهم</span>
                     </div>
                     <div className="flex items-center gap-2">
