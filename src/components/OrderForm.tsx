@@ -106,7 +106,7 @@ const EliteOrderForm = () => {
   const orderSectionRef = useRef(null);
 
   useEffect(() => {
-    trackPixelEvent('ViewContent', { content_name: 'Coiffeuse Élégante', value: 729.00, currency: 'MAD' });
+    trackPixelEvent('ViewContent', { content_name: 'Coiffeuse Élégante', value: 699.00, currency: 'MAD' });
   }, []);
 
   const scrollToSectionTop = () => {
@@ -201,7 +201,7 @@ const EliteOrderForm = () => {
         body: JSON.stringify(orderData) 
       });
       
-      trackPixelEvent('Purchase', { value: 729.00, currency: 'MAD' });
+      trackPixelEvent('Purchase', { value: 699.00, currency: 'MAD' });
       setShowSuccessPopup(true);
     } catch (error) {
       setSubmitError("حدث خطأ في الاتصال. حاول مرة أخرى.");
