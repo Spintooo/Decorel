@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 // --- Composant pour l'icône officielle de WhatsApp ---
 const WhatsAppIcon = (props) => (
@@ -14,15 +14,23 @@ const WhatsAppIcon = (props) => (
 const useMinimalStyles = () => {
   React.useEffect(() => {
     const criticalCSS = `
-      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400&display=swap');
-      .font-inter { font-family: 'Inter', sans-serif; }
+      @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&display=swap');
+      .font-tajawal { font-family: 'Tajawal', sans-serif; }
       
       @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px) scale(0.95); }
-        to { opacity: 1; transform: translateY(0) scale(1); }
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
       }
       .animate-fade-in {
-        animation: fadeIn 0.3s ease-out forwards;
+        animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+      }
+      .animate-pulse-slow {
+        animation: pulse 2s ease-in-out infinite;
       }
     `;
     const style = document.createElement('style');
@@ -36,8 +44,9 @@ const useMinimalStyles = () => {
 
 const Footer = () => {
   useMinimalStyles();
-
   const [isButtonVisible, setIsButtonVisible] = useState(false);
+  const [isFooterInView, setIsFooterInView] = useState(false);
+  const footerRef = useRef(null);
 
   const whatsappNumber = '212675118958';
   const whatsappMessage = encodeURIComponent('Bonjour, je souhaite obtenir des informations sur vos coiffeuses.');
@@ -49,7 +58,6 @@ const Footer = () => {
       const scrollHeight = document.documentElement.scrollHeight;
       const clientHeight = document.documentElement.clientHeight;
       
-      // Éviter la division par zéro si la page n'est pas scrollable
       if (scrollHeight <= clientHeight) {
         setIsButtonVisible(false);
         return;
@@ -57,43 +65,143 @@ const Footer = () => {
       
       const scrollableHeight = scrollHeight - clientHeight;
       const scrollPercent = (scrollTop / scrollableHeight) * 100;
-
-      // Afficher le bouton seulement si le scroll est supérieur à 77%
-      setIsButtonVisible(scrollPercent > 65);
+      
+      // Afficher le bouton sticky après 50% de scroll
+      setIsButtonVisible(scrollPercent > 40);
+      
+      // Vérifier si le footer est visible
+      if (footerRef.current) {
+        const footerRect = footerRef.current.getBoundingClientRect();
+        const footerTop = footerRect.top;
+        const windowHeight = window.innerHeight;
+        
+        // Si le footer entre dans la vue
+        setIsFooterInView(footerTop < windowHeight);
+      }
     };
 
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          setIsFooterInView(entry.isIntersecting);
+        });
+      },
+      {
+        threshold: 0.1,
+        rootMargin: '50px 0px 0px 0px'
+      }
+    );
+
     window.addEventListener('scroll', handleScroll, { passive: true });
-    
-    // Vérifier l'état initial au cas où la page se charge déjà scrollée
     handleScroll();
+
+    const timer = setTimeout(() => {
+      if (footerRef.current) {
+        observer.observe(footerRef.current);
+      }
+    }, 100);
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
+      if (footerRef.current) {
+        observer.unobserve(footerRef.current);
+      }
+      clearTimeout(timer);
     };
   }, []);
 
   return (
     <>
-      <footer className="bg-white border-t border-gray-200">
-        <div className="max-w-6xl mx-auto px-4 py-5 text-center">
-          <p className="font-inter text-xs text-gray-500">
-            © 2025 DECOREL l جميع الحقوق محفوظة.
-          </p>
-        </div>
-      </footer>
-
-      {/* Bouton WhatsApp Flottant avec rendu conditionnel */}
-      {isButtonVisible && (
+      {/* Bouton WhatsApp Sticky - Rond et plus petit */}
+      {isButtonVisible && !isFooterInView && (
         <a
           href={whatsappLink}
           target="_blank"
-          rel="noopener noreferrer"
-          className="fixed bottom-5 left-5 z-50 bg-[#25D366] text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center transform hover:scale-110 transition-all duration-300 ease-in-out animate-fade-in"
-          aria-label="Contactez-nous sur WhatsApp"
+          rel="noopener noreferrer nofollow"
+          // Modifié ici: w-16 h-16 (plus petit) et rounded-full (rond)
+          className="fixed bottom-8 right-8 z-40 bg-gradient-to-br from-[#25D366] to-[#128C7E] text-white w-16 h-16 rounded-full shadow-2xl flex items-center justify-center transform transition-all duration-300 hover:scale-110 hover:shadow-3xl hover:rotate-3 group animate-fade-in"
+          aria-label="Contact WhatsApp"
         >
-          <WhatsAppIcon className="h-7 w-7" />
+          <div className="relative">
+            {/* Icône légèrement réduite pour aller avec la nouvelle taille du bouton */}
+            <WhatsAppIcon className="h-9 w-9 transition-transform duration-300 group-hover:scale-110" />
+            <div className="absolute -inset-3 bg-[#25D366] rounded-full opacity-20 animate-pulse-slow"></div>
+          </div>
+          <div className="absolute -bottom-10 right-1/2 translate-x-1/2 bg-black/90 text-white text-xs font-tajawal font-medium px-3 py-2 rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-lg">
+            تواصل معنا
+          </div>
         </a>
       )}
+
+      <footer ref={footerRef} className="bg-gradient-to-b from-gray-50 to-white border-t border-gray-200/50 font-tajawal relative overflow-hidden">
+        {/* Fond décoratif */}
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#25D366]/5 to-transparent"></div>
+        
+        {/* Contenu Footer */}
+        <div className="relative z-10 max-w-7xl mx-auto px-6 py-10">
+          <div className="flex flex-col lg:flex-row items-center justify-between gap-8">
+            
+            {/* Section WhatsApp */}
+            <div className="flex-1 max-w-xl">
+              <div className="bg-gradient-to-r from-[#25D366]/10 to-[#128C7E]/10 backdrop-blur-sm border border-[#25D366]/20 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-[1.02]">
+                <a
+                  href={whatsappLink}
+                  target="_blank"
+                  rel="noopener noreferrer nofollow"
+                  className="flex flex-col sm:flex-row items-center gap-6 group"
+                >
+                  <div className="relative flex-shrink-0">
+                    <div className="w-20 h-20 bg-gradient-to-br from-[#25D366] to-[#128C7E] rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-2xl transition-all duration-300 group-hover:scale-105">
+                      <WhatsAppIcon className="h-10 w-10 text-white" />
+                    </div>
+                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md">
+                      <div className="w-4 h-4 bg-green-500 rounded-full animate-pulse"></div>
+                    </div>
+                  </div>
+                  
+                  <div className="text-center sm:text-right flex-1">
+                    {/* Nouveau texte WhatsApp */}
+                    <h3 className="text-lg font-bold text-gray-800 mb-2 group-hover:text-[#128C7E] transition-colors duration-300 leading-snug">
+                      تواصل معي عبر الواتساب اذا لم يعجبك هذا الشكل لدينا عدة اشكال ومقاسات.
+                    </h3>
+                    <p className="text-gray-600 text-sm mb-4">
+                      رد سريع عبر الواتساب خلال دقائق معدودة ✓
+                    </p>
+                    <div className="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200">
+                      <span className="text-green-600 font-medium">متصل الآن</span>
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    </div>
+                  </div>
+                </a>
+              </div>
+            </div>
+
+            {/* Section Copyright et Info */}
+            <div className="flex-1 text-center lg:text-right">
+              <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 border border-gray-200/50 shadow-sm">
+                {/* Titre DECOREL supprimé */}
+                
+                {/* Nouveau texte Info */}
+                <p className="text-gray-700 text-sm leading-relaxed mb-6 font-medium">
+            جميع منتجاتنا مصنوعة بأيادي حرفيين مغاربة 🇲🇦
+لا نبيع أي منتجات مستوردة من الصين.
+                  <br className="hidden sm:block" />
+                  <span className="block mt-1">معملنا متواجد بمدينة أكادير – المغرب 🇲🇦</span>
+                </p>
+                <div className="border-t border-gray-200 pt-4">
+                  <p className="text-gray-500 text-sm font-medium">
+                    © 2025 DECOREL l جميع الحقوق محفوظة.
+                  </p>
+                  {/* Texte "Conception technique" supprimé */}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Décoration du bas */}
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#25D366]/30 to-transparent"></div>
+      </footer>
     </>
   );
 };
