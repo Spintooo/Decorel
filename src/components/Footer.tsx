@@ -49,7 +49,7 @@ const Footer = () => {
   const footerRef = useRef(null);
 
   const whatsappNumber = '212675118958';
-  const whatsappMessage = encodeURIComponent('Bonjour, je souhaite obtenir des informations sur vos coiffeuses.');
+  const whatsappMessage = encodeURIComponent('السلام عليكم بغيت نعرف الاشكال والالوان لي عندكم');
   const whatsappLink = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
 
   useEffect(() => {
@@ -183,10 +183,10 @@ const Footer = () => {
                 
                 {/* Nouveau texte Info */}
                 <p className="text-gray-700 text-sm leading-relaxed mb-6 font-medium">
-            جميع منتجاتنا مصنوعة بأيادي حرفيين مغاربة 🇲🇦
-لا نبيع أي منتجات مستوردة من الصين.
+  
                   <br className="hidden sm:block" />
-                  <span className="block mt-1">معملنا متواجد بمدينة أكادير – المغرب 🇲🇦</span>
+                  <span className="block mt-1">
+                    </span>أكـــــــادير – المغرب 🇲🇦
                 </p>
                 <div className="border-t border-gray-200 pt-4">
                   <p className="text-gray-500 text-sm font-medium">

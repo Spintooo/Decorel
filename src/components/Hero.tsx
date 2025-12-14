@@ -63,7 +63,7 @@ const Hero = () => {
                 <div className="absolute inset-0 bg-gradient-to-br from-[#E8B4A0]/10 to-[#8B4513]/10 rounded-2xl transform rotate-1"></div>
                 <div className="relative w-full h-full rounded-2xl overflow-hidden shadow-lg border-2 border-white">
                   <img 
-                    src="https://i.ibb.co/DHCpFtxr/Design-sans-titre-min.png"
+                    src="https://i.ibb.co/DgVYv2MM/DECOREL.png"
                     alt="كوافوز فاخرة بتصميم عصري"
                     className="w-full h-full object-cover"
                     loading="lazy"
@@ -234,7 +234,7 @@ const Hero = () => {
                 <div className="absolute inset-0 bg-gradient-to-br from-[#E8B4A0]/15 to-[#8B4513]/15 rounded-3xl transform rotate-2"></div>
                 <div className="relative w-full h-full rounded-3xl overflow-hidden shadow-2xl border-4 border-white">
                   <img 
-                    src="https://i.ibb.co/DHCpFtxr/Design-sans-titre-min.png?auto=compress&cs=tinysrgb&w=1000&h=1000&fit=crop"
+                    src="https://i.ibb.co/DgVYv2MM/DECOREL.png?auto=compress&cs=tinysrgb&w=1000&h=1000&fit=crop"
                     alt="كوافوز فاخرة بتصميم عصري"
                     className="w-full h-full object-cover"
                   />
