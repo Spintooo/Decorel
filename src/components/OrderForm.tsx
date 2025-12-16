@@ -7,7 +7,7 @@ import {
 
 /* 
   =============================================================================
-  1. SYSTEM CONFIGURATION & UTILS (Pure & Testable)
+  1. SYSTEM CONFIGURATION & UTILS
   =============================================================================
 */
 
@@ -22,7 +22,7 @@ const CONFIG = {
   },
   CURRENCY: 'MAD',
   PRICE: 699.00,
-  STORAGE_KEY: 'elite_order_queue_v20_final', // New Key
+  STORAGE_KEY: 'elite_order_queue_v8_final',
   MAX_RETRIES: 5,
   SYNC_INTERVAL: 4000,
   BATCH_SIZE: 3,
@@ -30,7 +30,7 @@ const CONFIG = {
   PHONE_REGEX: /^(?:(?:\+|00)212|0)[5-7]\d{8}$/
 };
 
-// --- Safe Storage Wrapper (In-Memory Fallback) ---
+// --- Safe Storage (Fallback In-Memory si LocalStorage bloqué/plein) ---
 const safeStorage = {
   memoryStore: new Map(),
   get: (key) => {
@@ -51,10 +51,11 @@ const safeStorage = {
 };
 
 const utils = {
+  // CORRECTION : On ne fait PAS de .trim() ici pour autoriser les espaces pendant la saisie
   sanitizeInput: (str, maxLength = 255) => {
     if (typeof str !== 'string') return '';
-    // Removes HTML tags, dangerous chars, trims and truncates
-    return str.replace(/[<>&"'\\]/g, '').trim().slice(0, maxLength);
+    // Enlève uniquement les caractères dangereux (<, >, etc.)
+    return str.replace(/[<>&"'\\]/g, '').slice(0, maxLength);
   },
   
   generateUUID: () => {
@@ -102,7 +103,6 @@ const MIRROR_STYLES = [
 
 const useToast = () => {
   const [toast, setToast] = useState(null);
-  // Memoized to prevent effect triggers
   const showToast = useCallback((msg, type = 'info') => {
     const id = Date.now();
     setToast({ msg, type, id });
@@ -121,7 +121,7 @@ const useTracking = () => {
   return useMemo(() => ({ track }), [track]);
 };
 
-// --- Reducer for predictable state updates ---
+// --- Queue Manager (Reducer + Immediate Worker) ---
 const queueReducer = (state, action) => {
   switch (action.type) {
     case 'INIT': return action.payload;
@@ -137,14 +137,12 @@ const useReliableOrderQueue = (showToast) => {
   const [queue, dispatch] = useReducer(queueReducer, []);
   const [isOnline, setIsOnline] = useState(true);
   
-  // Refs to avoid stale closures in interval/timeouts
   const queueRef = useRef(queue);
   const isProcessingRef = useRef(false);
   const isMountedRef = useRef(true);
 
   useEffect(() => { queueRef.current = queue; }, [queue]);
 
-  // Init & Network Listeners
   useEffect(() => {
     isMountedRef.current = true;
     const loaded = safeStorage.get(CONFIG.STORAGE_KEY) || [];
@@ -160,8 +158,6 @@ const useReliableOrderQueue = (showToast) => {
 
     window.addEventListener('online', handleNetwork);
     window.addEventListener('offline', handleNetwork);
-    
-    // Cleanup to prevent memory leaks
     return () => {
       isMountedRef.current = false;
       window.removeEventListener('online', handleNetwork);
@@ -169,12 +165,11 @@ const useReliableOrderQueue = (showToast) => {
     };
   }, [showToast]);
 
-  // Persist Queue
   useEffect(() => {
     if (queue.length > 0) safeStorage.set(CONFIG.STORAGE_KEY, queue);
   }, [queue]);
 
-  // The Worker Logic (Isolated)
+  // Worker Logic with Batching & Immediate Trigger
   const processBatch = useCallback(async () => {
     if (!navigator.onLine || isProcessingRef.current || !isMountedRef.current) return;
     
@@ -185,7 +180,6 @@ const useReliableOrderQueue = (showToast) => {
     const batch = pending.slice(0, CONFIG.BATCH_SIZE);
 
     const promises = batch.map(async (order) => {
-      // Exponential Backoff
       const backoff = Math.pow(2, order.attempts) * 1000;
       if (Date.now() - order.lastAttempt < backoff) return;
 
@@ -205,7 +199,7 @@ const useReliableOrderQueue = (showToast) => {
           fetchPromises.push(fetch(`https://api.telegram.org/bot${CONFIG.TELEGRAM.BOT_TOKEN}/sendMessage`, {
             method: 'POST', headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ chat_id: CONFIG.TELEGRAM.CHAT_ID, text: `📦 ${order.fullName}` })
-          }).catch(() => {})); // Silent fail for Telegram
+          }).catch(() => {}));
         }
 
         const results = await Promise.allSettled(fetchPromises);
@@ -229,19 +223,16 @@ const useReliableOrderQueue = (showToast) => {
     await Promise.all(promises);
     isProcessingRef.current = false;
     
-    // Recursive trigger if items remain (more responsive than interval)
     if (isMountedRef.current && queueRef.current.filter(o => o.status === 'pending').length > 0) {
       setTimeout(processBatch, 1000); 
     }
   }, []);
 
-  // Interval Heartbeat
   useEffect(() => {
     const interval = setInterval(processBatch, CONFIG.SYNC_INTERVAL);
     return () => clearInterval(interval);
   }, [processBatch]);
 
-  // Public Action
   const addToQueue = useCallback((orderData) => {
     const newOrder = {
       ...orderData,
@@ -251,7 +242,7 @@ const useReliableOrderQueue = (showToast) => {
       lastAttempt: 0
     };
     dispatch({ type: 'ADD', payload: newOrder });
-    // Trigger immediate micro-task
+    // DÉCLENCHEMENT IMMÉDIAT
     setTimeout(processBatch, 0);
   }, [processBatch]);
 
@@ -319,7 +310,6 @@ const FormField = React.memo(({ name, icon: Icon, type, placeholder, value, onCh
 ));
 FormField.propTypes = { name: PropTypes.string.isRequired, icon: PropTypes.elementType, type: PropTypes.string, placeholder: PropTypes.string, value: PropTypes.string, onChange: PropTypes.func, error: PropTypes.string, prefix: PropTypes.string };
 
-// --- Generic Grid Component (DRY) ---
 const StepSelectionGrid = React.memo(({ items, selectedId, onSelect, getImageUrl, title, error, onNext, onPrev, nextLabel = "التـــالي" }) => (
   <div className="animate-slide-in">
     <h2 className="text-xl font-black text-gray-800 font-cairo text-center mb-4">{title}</h2>
@@ -387,7 +377,6 @@ StepSelectionGrid.propTypes = { items: PropTypes.array.isRequired, selectedId: P
 const SuccessPopup = ({ fullName, onClose }) => {
   const buttonRef = useRef(null);
   
-  // Focus Trap logic
   useEffect(() => {
     buttonRef.current?.focus();
     const handleKeyDown = (e) => { if (e.key === 'Escape') onClose(); };
@@ -448,6 +437,7 @@ const EliteOrderForm = () => {
 
   const handleInputChange = useCallback((e) => {
     const { name, value } = e.target;
+    // PAS DE .trim() ICI pour le bug d'espace
     const cleanValue = utils.sanitizeInput(value);
     
     let finalValue = cleanValue;
@@ -505,19 +495,20 @@ const EliteOrderForm = () => {
     const color = AVAILABLE_COLORS.find(c => c.id === formData.selectedColor);
     const mirror = MIRROR_STYLES.find(m => m.id === formData.selectedMirror);
 
+    // On applique .trim() ici juste avant l'envoi
     addToQueue({
       eventId: utils.generateUUID(),
       selectedColorName: color?.name || "N/A",
       selectedMirrorName: mirror?.name || "N/A",
-      fullName: formData.fullName,
+      fullName: formData.fullName.trim(),
       phone: formData.phoneLocalPart.replace(/\s/g, ''),
-      address: formData.address,
-      comments: formData.mirrorName || "",
+      address: formData.address.trim(),
+      comments: formData.mirrorName.trim() || "",
       timestamp: new Date().toISOString(),
       userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : ''
     });
 
-    await new Promise(r => setTimeout(r, 600)); // Slight delay for UX perception
+    await new Promise(r => setTimeout(r, 600)); // UX delay
     track('Purchase', { value: CONFIG.PRICE, currency: CONFIG.CURRENCY });
     setIsSubmitting(false);
     setShowSuccess(true);
